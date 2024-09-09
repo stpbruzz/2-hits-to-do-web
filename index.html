@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>To-do</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <link rel='stylesheet' type='text/css' media='screen' href='main.css'>
+</head>
+<body>
+    <div class="content">
+        <div class="header">
+                task list:
+        </div>
+        <div class="buttons">
+            <div class="add">
+                <input type="text" id="addDescription" autocomplete="off" placeholder="write new task description">
+                <button id="addButton">add new task</button>
+            </div>
+            <br>
+            <div class="saveLoadFile">
+                <button id="saveButton">save</button>
+                <button id="loadButton">load</button>
+            </div>
+        </div>
+        <div class="list">
+            <ul id="taskList" class="taskList"></ul>
+        </div>          
+    </div>
+    <script src='main.js'></script>
+</body>
+</html>
