@@ -1,28 +1,31 @@
 class Task {
-    constructor(description) {
+    constructor(description, flag = false) {
         this.description = description
-        this.flag = false
+        this.flag = flag
     }
 }
 
 class TaskField {
-    constructor(description) {
-        this.task = new Task(description)
+    constructor(description, flag = false) {
+        this.task = new Task(description, flag)
         
         this.text = document.createElement("input")
         this.text.id = "text"
         this.text.value = this.task.description
         this.text.disabled = true
 
-        this.checkbox = document.createElement("INPUT")
+        this.checkbox = document.createElement("input")
         this.checkbox.setAttribute("type", "checkbox")
         this.checkbox.id = "checkbox"
+        this.checkbox.checked = this.task.flag
         this.checkbox.addEventListener("click", () => {
             if (this.task.flag == false) {
                 this.task.flag = true
+                this.checkbox.checked = this.task.flag
                 update()
             } else {
                 this.task.flag = false
+                this.checkbox.checked = this.task.flag
                 update()
             }
         })
@@ -101,13 +104,23 @@ document.getElementById("saveButton").onclick = function() {
     let blob = new Blob([json], {type: "text/plain"})
     let jsonObjectUrl = URL.createObjectURL(blob)
     let filename = "to-do_save.json"
-    let anchor = document.createElement("a")
-    anchor.href = jsonObjectUrl
-    anchor.download = filename
-    anchor.click()
+    let a = document.createElement("a")
+    a.href = jsonObjectUrl
+    a.download = filename
+    a.click()
     URL.revokeObjectURL(jsonObjectUrl)
 }
 
 document.getElementById("loadButton").onclick = function() {
-    
+    let file = document.getElementById("file").files[0]
+    let read = new FileReader()
+    read.readAsText(file)
+    read.onload = function() {
+        let loadTasks = JSON.parse(read.result)
+        tasksFields = []
+        loadTasks.forEach(loadTask => {
+            tasksFields.push(new TaskField(loadTask.description, loadTask.flag))
+        })
+        update()
+    }
 }
