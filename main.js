@@ -1,13 +1,14 @@
 class Task {
-    constructor(description, flag = false) {
+    constructor(id, description, flag = false) {
+        this.id = id
         this.description = description
         this.flag = flag
     }
 }
 
 class TaskField {
-    constructor(description, flag = false) {
-        this.task = new Task(description, flag)
+    constructor(id, description, flag = false) {
+        this.task = new Task(id, description, flag)
         
         this.text = document.createElement("input")
         this.text.id = "text"
@@ -19,15 +20,12 @@ class TaskField {
         this.checkbox.id = "checkbox"
         this.checkbox.checked = this.task.flag
         this.checkbox.addEventListener("click", () => {
-            if (this.task.flag == false) {
-                this.task.flag = true
-                this.checkbox.checked = this.task.flag
-                update()
-            } else {
-                this.task.flag = false
-                this.checkbox.checked = this.task.flag
-                update()
-            }
+            const uri = 'http://localhost:5112/api/ToDo/' + this.task.id + '/flag'
+            
+            fetch(uri, {
+                method: "PATCH"
+            })
+            .then (() => getItems())
         })
 
         this.editButton = document.createElement("button")
@@ -39,21 +37,35 @@ class TaskField {
                 this.editButton.innerHTML = "save"
             } else {
                 this.text.disabled = true
-                this.task.description = this.text.value
                 this.editButton.innerHTML = "edit"
-            }
+
+                const uri = 'http://localhost:5112/api/ToDo/' + this.task.id + '/description'
+                
+                const taskDescription = {
+                    description: this.text.value
+                }
+
+                fetch(uri, {
+                    method: "PATCH",
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(taskDescription)
+                })
+                .then (() => getItems())
+            } 
         })
 
         this.deleteButton = document.createElement("button")
         this.deleteButton.innerHTML = "delete"
         this.deleteButton.id = "delete"
         this.deleteButton.addEventListener("click", () => {
-            tasksFields.forEach(taskField => {
-                if (this.task == taskField.task) {
-                    tasksFields.splice(tasksFields.indexOf(taskField), 1)
-                }
+            const uri = 'http://localhost:5112/api/ToDo/' + this.task.id
+
+            fetch(uri, {
+                method: "DELETE"
             })
-            update()
+            .then(() => getItems())
         })
     }
 }
@@ -61,66 +73,52 @@ class TaskField {
 let description = document.getElementById("addDescription")
 let list = document.getElementById("taskList")
 let tasksFields = []
+const uri = 'http://localhost:5112/api/ToDo/'
+
+function getItems() {
+    fetch(uri)
+    .then(response => response.json())
+    .then(data => {     
+        tasksFields = data.map(item => {
+            return new TaskField(item.id, item.description, item.flag)
+        })
+        tasksFields.sort((a, b) => {
+            return a.task.id - b.task.id;
+        });
+        update();
+    })
+}
+
 
 document.getElementById("addButton").onclick = function() {
-    tasksFields.push(new TaskField(description.value))
-    update()
-    description.value = ""
+    var taskDescription = {
+        description: description.value
+    }
+
+    fetch(uri, {
+        method: "POST",
+        headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(taskDescription)
+    })
+    .then(response => response.json())
+    .then(() => {
+        getItems()
+        description.value = ""
+    })
 }
 
 function update() {
     list.innerHTML = ""
 
     tasksFields.forEach(taskField => {
-        if (taskField.task.flag == false) {
-            let li = document.createElement("li")
-            li.appendChild(taskField.checkbox)
-            li.appendChild(taskField.text)
-            li.appendChild(taskField.editButton)
-            li.appendChild(taskField.deleteButton)
-            list.append(li)
-        }
-    });
-
-    tasksFields.forEach(taskField => {
-        if (taskField.task.flag == true) {
-            let li = document.createElement("li")
-            li.appendChild(taskField.checkbox)
-            li.appendChild(taskField.text)
-            li.appendChild(taskField.editButton)
-            li.appendChild(taskField.deleteButton)
-            list.append(li)
-        }
-    });
-}
-
-document.getElementById("saveButton").onclick = function() {
-    let tasksJSON = []
-    tasksFields.forEach(taskField => {
-        tasksJSON.push(taskField.task)
+        let li = document.createElement("li")
+        li.appendChild(taskField.checkbox)
+        li.appendChild(taskField.text)
+        li.appendChild(taskField.editButton)
+        li.appendChild(taskField.deleteButton)
+        list.append(li)
     })
-
-    let json = JSON.stringify(tasksJSON)
-    let blob = new Blob([json], {type: "text/plain"})
-    let jsonObjectUrl = URL.createObjectURL(blob)
-    let filename = "to-do_save.json"
-    let a = document.createElement("a")
-    a.href = jsonObjectUrl
-    a.download = filename
-    a.click()
-    URL.revokeObjectURL(jsonObjectUrl)
-}
-
-document.getElementById("loadButton").onclick = function() {
-    let file = document.getElementById("file").files[0]
-    let read = new FileReader()
-    read.readAsText(file)
-    read.onload = function() {
-        let loadTasks = JSON.parse(read.result)
-        tasksFields = []
-        loadTasks.forEach(loadTask => {
-            tasksFields.push(new TaskField(loadTask.description, loadTask.flag))
-        })
-        update()
-    }
 }
